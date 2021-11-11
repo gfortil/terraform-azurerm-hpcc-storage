@@ -3,11 +3,7 @@ resource "random_integer" "random" {
   max = 3
 }
 
-resource "random_string" "random" {
-  length  = 43
-  upper   = false
-  number  = false
-  special = false
+resource "random_uuid" "random" {
 }
 
 module "subscription" {
@@ -46,26 +42,78 @@ module "resource_group" {
   tags        = local.tags
 }
 
-resource "azurerm_storage_account" "storage_account" {
+module "virtual_network" {
+  source = "github.com/Azure-Terraform/terraform-azurerm-virtual-network.git?ref=v5.0.0"
 
-  name                     = lower(try("${var.admin.name}hpccsa${random_integer.random.result}", "hpccsa${random_integer.random.result}404"))
-  resource_group_name      = module.resource_group.name
-  location                 = module.resource_group.location
-  account_tier             = var.storage.account_tier
-  account_replication_type = var.storage.account_replication_type
-  min_tls_version          = "TLS1_2"
-  tags                     = local.tags
+  naming_rules = module.naming.yaml
+
+  resource_group_name = module.resource_group.name
+  location            = module.resource_group.location
+  names               = module.metadata.names
+  tags                = module.metadata.tags
+
+  enforce_subnet_names = false
+
+  address_space = ["10.1.0.0/22"]
+  aks_subnets = {
+    hpcc = {
+      private = {
+        cidrs             = ["10.1.3.0/25"]
+        service_endpoints = ["Microsoft.Storage"]
+      }
+      public = {
+        cidrs             = ["10.1.3.128/25"]
+        service_endpoints = ["Microsoft.Storage"]
+      }
+      route_table = {
+        disable_bgp_route_propagation = true
+        routes = {
+          internet = {
+            address_prefix = "0.0.0.0/0"
+            next_hop_type  = "Internet"
+          }
+          local-vnet-10-1-0-0-21 = {
+            address_prefix = "10.1.0.0/21"
+            next_hop_type  = "vnetlocal"
+          }
+        }
+      }
+    }
+  }
+}
+
+module "storage_account" {
+  source = "github.com/Azure-Terraform/terraform-azurerm-storage-account.git?ref=v0.12.1"
+
+  name                = lower(try("${var.admin.name}hpccsa${random_integer.random.result}", "hpccsa${random_integer.random.result}404"))
+  resource_group_name = module.resource_group.name
+  location            = module.resource_group.location
+  tags                = local.tags
+
+  account_kind              = var.storage.account_kind
+  replication_type          = var.storage.replication_type
+  account_tier              = var.storage.account_tier
+  access_tier               = var.storage.access_tier
+  enable_large_file_share   = var.storage.enable_large_file_share
+  shared_access_key_enabled = true
+  access_list = {
+    "my_ip" = data.http.host_ip.body
+  }
+
+  service_endpoints = {
+    "aks_public"  = module.virtual_network.aks["hpcc"].subnets.public.id
+    "aks_private" = module.virtual_network.aks["hpcc"].subnets.private.id
+  }
 }
 
 resource "azurerm_storage_share" "storage_shares" {
   for_each = local.storage_shares
 
   name                 = each.key
-  storage_account_name = azurerm_storage_account.storage_account.name
+  storage_account_name = module.storage_account.name
   quota                = each.value
-
   acl {
-    id = random_string.random.result
+    id = random_uuid.random.result
 
     access_policy {
       permissions = "rwdl"

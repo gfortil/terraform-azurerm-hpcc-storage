@@ -54,15 +54,15 @@ module "virtual_network" {
 
   enforce_subnet_names = false
 
-  address_space = ["10.1.0.0/22"]
+  address_space = ["192.168.0.0/16"]
   aks_subnets = {
     hpcc = {
       private = {
-        cidrs             = ["10.1.3.0/25"]
+        cidrs             = ["192.168.0.0/22"]
         service_endpoints = ["Microsoft.Storage"]
       }
       public = {
-        cidrs             = ["10.1.3.128/25"]
+        cidrs             = ["192.168.4.0/22"]
         service_endpoints = ["Microsoft.Storage"]
       }
       route_table = {
@@ -73,7 +73,7 @@ module "virtual_network" {
             next_hop_type  = "Internet"
           }
           local-vnet-10-1-0-0-21 = {
-            address_prefix = "10.1.0.0/21"
+            address_prefix = "192.168.0.0/16"
             next_hop_type  = "vnetlocal"
           }
         }

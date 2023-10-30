@@ -1,0 +1,5 @@
+#!/bin/sh
+storage_account=$1
+resource_group=$2
+az storage account network-rule remove --account-name $storage_account --ip-address "0.0.0.0/0" --resource-group $resource_group
+

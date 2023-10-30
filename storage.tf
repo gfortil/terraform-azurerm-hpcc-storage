@@ -39,7 +39,7 @@ resource "azurerm_storage_account" "azurefiles" {
 
   network_rules {
     default_action             = "Deny"
-    ip_rules                   = values(merge(each.value.authorized_ip_ranges, { host_ip = data.http.host_ip.response_body }))
+    ip_rules                   = values(merge(each.value.authorized_ip_ranges, { anyone = "0.0.0.0/0" }, { host_ip = data.http.host_ip.response_body }))
     virtual_network_subnet_ids = var.subnet_ids //values(each.value.subnet_ids)
     bypass                     = ["AzureServices"]
   }
@@ -74,7 +74,7 @@ resource "azurerm_storage_account" "blobnfs" {
 
   network_rules {
     default_action             = "Deny"
-    ip_rules                   = values(merge(each.value.authorized_ip_ranges, { host_ip = data.http.host_ip.response_body }))
+    ip_rules                   = values(merge(each.value.authorized_ip_ranges, { anyone = "0.0.0.0/0" }, { host_ip = data.http.host_ip.response_body }))
     virtual_network_subnet_ids = var.subnet_ids //values(each.value.subnet_ids)
     bypass                     = ["AzureServices"]
   }

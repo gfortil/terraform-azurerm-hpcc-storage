@@ -45,7 +45,7 @@ locals {
         "account_kind" : "${v.account_kind}"
         "account_tier" : "${v.account_tier}"
         "replication_type" : "${v.replication_type}"
-        "authorized_ip_ranges" : "${merge(v.authorized_ip_ranges, { host_ip = trimspace(data.http.host_ip.response_body) })}"
+        "authorized_ip_ranges" : "${merge(v.authorized_ip_ranges, { host_ip = data.http.host_ip.response_body })}"
         "subnet_ids" : "${v.subnet_ids}"
         "file_share_retention_days" : v.storage_type == "azurefiles" ? "${v.file_share_retention_days}" : null
         "prefix_name" : "${v.prefix_name}"

@@ -34,12 +34,11 @@ resource "azurerm_storage_account" "azurefiles" {
 
   shared_access_key_enabled = true
 
-  enable_https_traffic_only = false
   account_replication_type  = each.value.replication_type
 
   network_rules {
     default_action             = "Deny"
-    ip_rules                   = values(merge(each.value.authorized_ip_ranges, { host_ip = data.http.host_ip.response_body }))
+    ip_rules                   = values(merge(each.value.authorized_ip_ranges, { host_ip = trimspace(data.http.host_ip.response_body) }))
     virtual_network_subnet_ids = values(each.value.subnet_ids)
     bypass                     = ["AzureServices"]
   }
@@ -68,13 +67,13 @@ resource "azurerm_storage_account" "blobnfs" {
   shared_access_key_enabled = true
 
   nfsv3_enabled             = true
-  enable_https_traffic_only = true
+  # enable_https_traffic_only = true was removed since it's not valid for the azurerm_storage_account resource when is_hns_enabled is set to true
   account_replication_type  = each.value.replication_type
 
 
   network_rules {
     default_action             = "Deny"
-    ip_rules                   = values(merge(each.value.authorized_ip_ranges, { host_ip = data.http.host_ip.response_body }))
+    ip_rules                   = values(merge(each.value.authorized_ip_ranges, { host_ip = trimspace(data.http.host_ip.response_body) }))
     virtual_network_subnet_ids = values(each.value.subnet_ids)
     bypass                     = ["AzureServices"]
   }

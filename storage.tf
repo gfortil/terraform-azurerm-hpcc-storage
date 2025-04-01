@@ -63,16 +63,15 @@ resource "azurerm_storage_account" "blobnfs" {
   allow_nested_items_to_be_public = false
   is_hns_enabled                  = true
   min_tls_version                 = "TLS1_2"
-  shared_access_key_enabled = true
-  nfsv3_enabled             = true
-  # enable_https_traffic_only = true was removed since it's not valid for the azurerm_storage_account resource when is_hns_enabled is set to true
-  account_replication_type  = each.value.replication_type
-
+  shared_access_key_enabled       = true
+  nfsv3_enabled                   = true
+  https_traffic_only_enabled      = true
+  account_replication_type        = each.value.replication_type
 
   network_rules {
     default_action             = "Deny"
-    ip_rules                   = values(merge(each.value.authorized_ip_ranges, { host_ip = trimspace(data.http.host_ip.response_body) }))
-    virtual_network_subnet_ids = values(each.value.subnet_ids)
+    ip_rules                   = var.use_authorized_ip_ranges_only ? values(var.authorized_ip_ranges) : values(merge(var.authorized_ip_ranges, { host_ip = trimspace(data.http.host_ip[0].response_body) }))
+    virtual_network_subnet_ids = var.subnet_ids //values(each.value.subnet_ids)
     bypass                     = ["AzureServices"]
   }
 
